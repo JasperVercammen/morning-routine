@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -33,7 +33,7 @@ jobs:
         run: npm run build
 
       - name: Upload build output as workflow artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -58,7 +58,7 @@ jobs:
 
       - name: Deploy to FTP
         if: github.event_name != 'pull_request'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -67,4 +67,4 @@ jobs:
           port: ${{ vars.FTP_PORT || 21 }}
           local-dir: ./dist/
           # Trailing slash required.
-          server-dir: ${{ vars.FTP_SERVER_DIR || './' }}
+          server-dir: public_html/
