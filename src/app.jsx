@@ -1,14 +1,7 @@
-/* global React, ReactDOM, useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakButton */
+/* global React, ReactDOM */
 /* Morning — app orchestrator */
 
 const STORE_KEY = "morning.state.v1";
-
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "theme": "soft",
-  "countdownStyle": "journey",
-  "previewWeather": "auto",
-  "tickSound": false
-}/*EDITMODE-END*/;
 
 function defaultConfig() {
   return {
@@ -41,7 +34,6 @@ function todayAt(h, m) {
 }
 
 function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const saved = useRef(loadState());
 
   const [config, setConfig] = useState(() => (saved.current && saved.current.config) || defaultConfig());
@@ -95,14 +87,12 @@ function App() {
   };
   const [remountKey, setRemountKey] = useState(0);
 
-  // resolve weather condition (with optional preview override)
-  const liveCondition = weather.current ? wmoInfo(weather.current.code).key : "partly";
-  const condition = t.previewWeather && t.previewWeather !== "auto" ? t.previewWeather : liveCondition;
+  const condition = weather.current ? wmoInfo(weather.current.code).key : "partly";
 
   const showSky = phase !== "setup";
 
   return (
-    <div className="app" data-theme={t.theme} style={{ background: "var(--paper)" }}>
+    <div className="app" data-theme="soft" style={{ background: "var(--paper)" }}>
       {showSky && <WeatherScene condition={condition} />}
 
       <div className="screen" style={{ position: "relative", zIndex: 1, height: "100%" }}>
@@ -116,7 +106,6 @@ function App() {
             now={now}
             startTs={startTs}
             leaveTs={leaveTs}
-            style={t.countdownStyle}
             onBack={backToSetup}
           />
         )}
@@ -125,51 +114,13 @@ function App() {
             key={remountKey}
             config={config}
             weather={weather}
-            tickSound={t.tickSound}
+            tickSound={false}
             onRestart={restartBoard}
             onBackToSetup={backToSetup}
           />
         )}
       </div>
 
-      <TweaksPanel>
-        <TweakSection label="Uiterlijk" />
-        <TweakRadio
-          label="Thema"
-          value={t.theme}
-          options={["soft", "bold", "calm"]}
-          onChange={(v) => setTweak("theme", v)}
-        />
-        <TweakSection label="Aftellen" />
-        <TweakRadio
-          label="Stijl"
-          value={t.countdownStyle}
-          options={["bar", "ring", "journey"]}
-          onChange={(v) => setTweak("countdownStyle", v)}
-        />
-        <TweakSection label="Weer (test)" />
-        <TweakSelect
-          label="Lucht"
-          value={t.previewWeather}
-          options={["auto", "clear", "partly", "cloudy", "rain", "snow", "storm", "fog"]}
-          onChange={(v) => setTweak("previewWeather", v)}
-        />
-        <TweakSection label="Geluid" />
-        <TweakToggle
-          label="Tik-geluid bij afvinken"
-          value={t.tickSound}
-          onChange={(v) => setTweak("tickSound", v)}
-        />
-        <TweakSection label="Uitproberen" />
-        <TweakButton
-          label="⏩ Spoel naar bijna klaar"
-          onClick={() => { if (phase === "count") { setLeaveTs(Date.now() + 8000); } }}
-        />
-        <TweakButton
-          label="↺ Begin opnieuw"
-          onClick={backToSetup}
-        />
-      </TweaksPanel>
     </div>
   );
 }
