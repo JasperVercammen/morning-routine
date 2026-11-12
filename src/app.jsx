@@ -88,12 +88,13 @@ function App() {
   const [remountKey, setRemountKey] = useState(0);
 
   const condition = weather.current ? wmoInfo(weather.current.code).key : "partly";
+  const tod = timeOfDay(now, weather.sun);
 
   const showSky = phase !== "setup";
 
   return (
     <div className="app" data-theme="soft" style={{ background: "var(--paper)" }}>
-      {showSky && <WeatherScene condition={condition} />}
+      {showSky && <WeatherScene condition={condition} tod={tod} />}
 
       <div className="screen" style={{ position: "relative", zIndex: 1, height: "100%" }}>
         {phase === "setup" && (

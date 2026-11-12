@@ -248,6 +248,40 @@
   display: grid; place-items: center; box-shadow: var(--shadow-soft); z-index: 2;
 }
 
+/* per-kid extra tasks */
+.kidextras { display: flex; flex-direction: column; gap: 12px; }
+.kidextra {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--card-2);
+}
+.kidextra--off { opacity: .5; }
+.kidextra__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kidextra__avatar { font-size: 32px; line-height: 1; }
+.kidextra__name { font-weight: 800; font-size: 18px; color: var(--ink); min-width: 60px; }
+.kidextra__chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.kidextra__pick {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding-top: 10px; border-top: 2px dashed var(--stroke);
+}
+.xchip {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--card); border: 2px solid var(--accent-3);
+  font-weight: 800; font-size: 15px; color: var(--ink);
+}
+.xchip__e { font-size: 22px; line-height: 1; }
+.xchip__x {
+  width: 22px; height: 22px; border-radius: 50%; margin-left: 2px;
+  background: var(--ink-soft); color: #fff; font-size: 15px; font-weight: 800;
+  display: grid; place-items: center;
+}
+.xchip--add { border: 2px dashed var(--stroke); color: var(--ink-soft); }
+.xchip--pick { border-color: transparent; }
+.xchip--pick:active, .xchip--add:active { transform: scale(.95); }
+.xchip--new { border: 2px dashed var(--stroke); color: var(--ink-soft); }
+
 .setup__foot { text-align: center; padding: 26px 0 6px; flex-shrink: 0; }
 .setup__hint { display: block; margin-top: 12px; color: var(--ink-soft); font-weight: 700; font-size: 15px; }
 
@@ -455,6 +489,14 @@
 .chk--on .chk__emoji { filter: saturate(1.1); }
 .chk--on .chk__label { color: var(--ink-soft); text-decoration: line-through; text-decoration-thickness: 2px; }
 .chk--on .chk__mark { opacity: 1; transform: scale(1); }
+.chk--extra { border-color: var(--accent-3); border-style: dashed; }
+.chk--extra.chk--on { border-style: solid; border-color: var(--accent-2); }
+.chk__extra {
+  position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; padding: 2px 10px; border-radius: 999px;
+  background: var(--accent-3); color: var(--ink); font-size: 12px; font-weight: 800;
+  box-shadow: var(--shadow-soft);
+}
 
 .kidcol__cheer {
   position: absolute; inset: 0; z-index: 5;

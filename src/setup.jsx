@@ -36,6 +36,11 @@ const DEFAULT_TASKS = ["shoes", "jacket", "toilet", "bag"];
 
 function pad(n) { return String(n).padStart(2, "0"); }
 
+function kidTaskIds(config, kid) {
+  const extras = (kid.extraTasks || []).filter((id) => !config.tasks.includes(id));
+  return [...config.tasks, ...extras];
+}
+
 /* ---- Time stepper ---- */
 function TimePicker({ h, m, onChange }) {
   const bump = (field, dir) => {
@@ -143,6 +148,57 @@ function EmojiLabelForm({ onAdd, onCancel, placeholder, initialEmoji = "⭐" }) 
   );
 }
 
+/* ---- Extra tasks for one kid, on top of the shared list ---- */
+function KidExtras({ kid, allTasks, sharedIds, onChange, onCreate }) {
+  const [picking, setPicking] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const extras = kid.extraTasks || [];
+  const byId = useMemo(() => Object.fromEntries(allTasks.map((t) => [t.id, t])), [allTasks]);
+  const candidates = allTasks.filter((t) => !sharedIds.includes(t.id) && !extras.includes(t.id));
+
+  const close = () => { setPicking(false); setCreating(false); };
+  const add = (id) => { onChange([...extras, id]); close(); };
+
+  return (
+    <div className={"kidextra" + (kid.on ? "" : " kidextra--off")}>
+      <div className="kidextra__row">
+        <span className="kidextra__avatar">{kid.avatar}</span>
+        <span className="kidextra__name">{kid.name}</span>
+        <div className="kidextra__chips">
+          {extras.map((id) => byId[id] && (
+            <span key={id} className="xchip">
+              <span className="xchip__e">{byId[id].emoji}</span>
+              <span className="xchip__l">{byId[id].label}</span>
+              <button className="xchip__x" onClick={() => onChange(extras.filter((t) => t !== id))} aria-label="verwijder extra taak">×</button>
+            </span>
+          ))}
+          <button className="xchip xchip--add" onClick={() => (picking ? close() : setPicking(true))}>
+            {picking ? "sluit" : "＋ extra"}
+          </button>
+        </div>
+      </div>
+      {picking && !creating && (
+        <div className="kidextra__pick">
+          {candidates.map((t) => (
+            <button key={t.id} className="xchip xchip--pick" onClick={() => add(t.id)}>
+              <span className="xchip__e">{t.emoji}</span>
+              <span className="xchip__l">{t.label}</span>
+            </button>
+          ))}
+          <button className="xchip xchip--pick xchip--new" onClick={() => setCreating(true)}>＋ eigen</button>
+        </div>
+      )}
+      {creating && (
+        <EmojiLabelForm
+          placeholder={"extra taak voor " + kid.name}
+          onAdd={(emoji, label) => { onCreate(emoji, label); close(); }}
+          onCancel={close}
+        />
+      )}
+    </div>
+  );
+}
+
 /* ---- Setup screen ---- */
 function SetupScreen({ config, setConfig, onStart, weather }) {
   const [adding, setAdding] = useState(false);
@@ -194,6 +250,19 @@ function SetupScreen({ config, setConfig, onStart, weather }) {
       ...config,
       customTasks: (config.customTasks || []).filter((c) => c.id !== id),
       tasks: config.tasks.filter((t) => t !== id),
+      kids: config.kids.map((k) => ({ ...k, extraTasks: (k.extraTasks || []).filter((t) => t !== id) })),
+    });
+  };
+
+  const setKidExtras = (kidId, extraTasks) =>
+    setConfig({ ...config, kids: config.kids.map((k) => (k.id === kidId ? { ...k, extraTasks } : k)) });
+
+  const addCustomForKid = (kidId, emoji, label) => {
+    const id = "custom" + Date.now();
+    setConfig({
+      ...config,
+      customTasks: [...(config.customTasks || []), { id, emoji, label }],
+      kids: config.kids.map((k) => (k.id === kidId ? { ...k, extraTasks: [...(k.extraTasks || []), id] } : k)),
     });
   };
 
@@ -217,9 +286,10 @@ function SetupScreen({ config, setConfig, onStart, weather }) {
   };
 
   const activeKids = config.kids.filter((k) => k.on && k.name.trim());
-  const canStart = activeKids.length > 0 && config.tasks.length > 0;
+  const namedKids = config.kids.filter((k) => k.name.trim());
+  const canStart = activeKids.length > 0 && activeKids.every((k) => kidTaskIds(config, k).length > 0);
 
-  const info = weather && weather.current ? wmoInfo(weather.current.code) : null;
+  const info = weather && weather.current ? wmoInfo(weather.current.code, weather.current.isDay) : null;
 
   return (
     <div className="setup">
@@ -325,6 +395,24 @@ function SetupScreen({ config, setConfig, onStart, weather }) {
               </button>
             )}
           </div>
+
+          {namedKids.length > 0 && (
+            <>
+              <h2 className="panel__h display" style={{ marginTop: 26 }}>Extra voor één kind</h2>
+              <div className="kidextras">
+                {namedKids.map((k) => (
+                  <KidExtras
+                    key={k.id}
+                    kid={k}
+                    allTasks={allTasks}
+                    sharedIds={config.tasks}
+                    onChange={(ids) => setKidExtras(k.id, ids)}
+                    onCreate={(emoji, label) => addCustomForKid(k.id, emoji, label)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </section>
       </div>
 
@@ -332,10 +420,10 @@ function SetupScreen({ config, setConfig, onStart, weather }) {
         <button className="bigbtn" disabled={!canStart} onClick={onStart}>
           Start! <span className="bigbtn__play">▶</span>
         </button>
-        {!canStart && <span className="setup__hint">Kies minstens één kind en één taak</span>}
+        {!canStart && <span className="setup__hint">Kies minstens één kind en voor elk kind één taak</span>}
       </footer>
     </div>
   );
 }
 
-Object.assign(window, { ANIMALS, TASK_CATALOG, DEFAULT_TASKS, TASK_CATALOG_BY_ID: Object.fromEntries(TASK_CATALOG.map(t => [t.id, t])), SetupScreen, pad });
+Object.assign(window, { ANIMALS, TASK_CATALOG, DEFAULT_TASKS, TASK_CATALOG_BY_ID: Object.fromEntries(TASK_CATALOG.map(t => [t.id, t])), SetupScreen, pad, kidTaskIds });

@@ -9,7 +9,12 @@ function GetReadyScreen({ config, weather, onRestart, onBackToSetup, tickSound }
     (config.customTasks || []).forEach((t) => (m[t.id] = t));
     return m;
   }, [config.customTasks]);
-  const tasks = config.tasks.map((id) => tasksById[id]).filter(Boolean);
+  const kidTasks = {};
+  activeKids.forEach((k) => {
+    kidTasks[k.id] = kidTaskIds(config, k)
+      .map((id) => tasksById[id] && { ...tasksById[id], extra: !config.tasks.includes(id) })
+      .filter(Boolean);
+  });
 
   const [done, setDone] = useState(() => {
     const o = {};
@@ -51,7 +56,8 @@ function GetReadyScreen({ config, weather, onRestart, onBackToSetup, tickSound }
   // detect completion per kid
   useEffect(() => {
     activeKids.forEach((k) => {
-      const isComplete = tasks.length > 0 && (done[k.id] || []).length === tasks.length;
+      const total = kidTasks[k.id].length;
+      const isComplete = total > 0 && (done[k.id] || []).length === total;
       if (isComplete && !prevComplete.current[k.id]) {
         prevComplete.current[k.id] = true;
         setCelebrated((c) => ({ ...c, [k.id]: true }));
@@ -70,7 +76,7 @@ function GetReadyScreen({ config, weather, onRestart, onBackToSetup, tickSound }
     });
   }, [done]);
 
-  const allDone = activeKids.length > 0 && activeKids.every((k) => (done[k.id] || []).length === tasks.length);
+  const allDone = activeKids.length > 0 && activeKids.every((k) => (done[k.id] || []).length === kidTasks[k.id].length);
 
   let sub;
   if (allDone) sub = "Jassen aan — we gaan!";
@@ -98,6 +104,7 @@ function GetReadyScreen({ config, weather, onRestart, onBackToSetup, tickSound }
           const kdone = done[k.id] || [];
           const complete = celebrated[k.id];
           const isReported = !!reported[k.id];
+          const tasks = kidTasks[k.id];
           const remaining = tasks.length - kdone.length;
           return (
             <div
@@ -119,12 +126,13 @@ function GetReadyScreen({ config, weather, onRestart, onBackToSetup, tickSound }
                   return (
                     <button
                       key={t.id}
-                      className={"chk" + (checked ? " chk--on" : "")}
+                      className={"chk" + (checked ? " chk--on" : "") + (t.extra ? " chk--extra" : "")}
                       onClick={() => toggle(k.id, t.id)}
                     >
                       <span className="chk__emoji">{t.emoji}</span>
                       <span className="chk__label">{t.label}</span>
                       <span className="chk__mark">{checked ? "✓" : ""}</span>
+                      {t.extra && <span className="chk__extra">⭐ enkel voor jou</span>}
                     </button>
                   );
                 })}
