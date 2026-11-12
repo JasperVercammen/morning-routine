@@ -54,7 +54,7 @@ function CountdownScreen({ config, weather, now, startTs, leaveTs, onBack }) {
 
   const leaveDate = new Date(leaveTs);
 
-  const info = weather && weather.current ? wmoInfo(weather.current.code) : null;
+  const info = weather && weather.current ? wmoInfo(weather.current.code, weather.current.isDay) : null;
 
   return (
     <div className="count">

@@ -3,11 +3,11 @@ const { useState, useEffect, useMemo, useRef } = React;
 Object.assign(window, { useState, useEffect, useMemo, useRef });
 
 /* ---- WMO weather code -> condition info (Dutch) ---- */
-function wmoInfo(code) {
+function wmoInfo(code, isDay = true) {
   const c = Number(code);
-  if (c === 0) return { key: "clear", emoji: "☀️", label: "Zonnig" };
-  if (c === 1) return { key: "partly", emoji: "🌤️", label: "Mooi weer" };
-  if (c === 2) return { key: "partly", emoji: "⛅", label: "Halfbewolkt" };
+  if (c === 0) return isDay ? { key: "clear", emoji: "☀️", label: "Zonnig" } : { key: "clear", emoji: "🌙", label: "Helder" };
+  if (c === 1) return isDay ? { key: "partly", emoji: "🌤️", label: "Mooi weer" } : { key: "partly", emoji: "🌙", label: "Vrij helder" };
+  if (c === 2) return isDay ? { key: "partly", emoji: "⛅", label: "Halfbewolkt" } : { key: "partly", emoji: "☁️", label: "Halfbewolkt" };
   if (c === 3) return { key: "cloudy", emoji: "☁️", label: "Bewolkt" };
   if (c === 45 || c === 48) return { key: "fog", emoji: "🌫️", label: "Mist" };
   if (c >= 51 && c <= 57) return { key: "rain", emoji: "🌦️", label: "Motregen" };
@@ -30,7 +30,8 @@ function useWeather() {
     async function load(lat, lon, place) {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-          `&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code` +
+          `&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day` +
+          `&daily=sunrise,sunset` +
           `&timezone=auto&forecast_days=1`;
         const res = await fetch(url);
         const data = await res.json();
@@ -44,12 +45,18 @@ function useWeather() {
             hour: new Date(data.hourly.time[i]).getHours(),
             temp: Math.round(data.hourly.temperature_2m[i]),
             code: data.hourly.weather_code[i],
+            isDay: data.hourly.is_day[i] === 1,
           });
         }
         setState({
           status: "ok",
-          current: { temp: Math.round(data.current.temperature_2m), code: data.current.weather_code },
+          current: {
+            temp: Math.round(data.current.temperature_2m),
+            code: data.current.weather_code,
+            isDay: data.current.is_day === 1,
+          },
           hourly,
+          sun: { rise: new Date(data.daily.sunrise[0]).getTime(), set: new Date(data.daily.sunset[0]).getTime() },
           place: place || "",
         });
       } catch (e) {
@@ -63,8 +70,14 @@ function useWeather() {
       const codes = [3, 61, 80, 2];
       const hourly = Array.from({ length: 8 }, (_, i) => ({
         time: "", hour: (h + i) % 24, temp: 11 + ((i * 3) % 5), code: codes[i % codes.length],
+        isDay: (h + i) % 24 >= 8 && (h + i) % 24 < 17,
       }));
-      setState({ status: "mock", current: { temp: 12, code: 61 }, hourly, place: "Voorbeeld" });
+      const rise = new Date(); rise.setHours(8, 0, 0, 0);
+      const set = new Date(); set.setHours(17, 0, 0, 0);
+      setState({
+        status: "mock", current: { temp: 12, code: 61, isDay: h >= 8 && h < 17 }, hourly, place: "Voorbeeld",
+        sun: { rise: rise.getTime(), set: set.getTime() },
+      });
     }
 
     // Default fallback location: Antwerp
@@ -85,9 +98,29 @@ function useWeather() {
   return state;
 }
 
+/* ---- Time of day: night / dawn / day / dusk around sunrise & sunset ---- */
+const TWILIGHT_BEFORE = 45 * 60 * 1000;
+const TWILIGHT_AFTER = 30 * 60 * 1000;
+
+function timeOfDay(now, sun) {
+  let rise = sun && sun.rise;
+  let set = sun && sun.set;
+  if (!rise || !set) {
+    const d = new Date(now);
+    rise = new Date(d).setHours(8, 0, 0, 0);
+    set = new Date(d).setHours(17, 0, 0, 0);
+  }
+  if (now < rise - TWILIGHT_BEFORE) return "night";
+  if (now < rise + TWILIGHT_AFTER) return "dawn";
+  if (now < set - TWILIGHT_AFTER) return "day";
+  if (now < set + TWILIGHT_BEFORE) return "dusk";
+  return "night";
+}
+
 /* ---- Animated sky background ---- */
-function WeatherScene({ condition }) {
+function WeatherScene({ condition, tod = "day" }) {
   const key = condition || "partly";
+  const isNight = tod === "night";
 
   const clouds = useMemo(() => {
     const n = key === "clear" ? 2 : (key === "fog" ? 2 : 4);
@@ -123,11 +156,31 @@ function WeatherScene({ condition }) {
     }));
   }, [key]);
 
-  const showSun = key === "clear" || key === "partly";
+  const stars = useMemo(() => {
+    if (!isNight || (key !== "clear" && key !== "partly")) return [];
+    return Array.from({ length: key === "clear" ? 70 : 35 }, () => ({
+      left: Math.random() * 100 + "%",
+      top: Math.random() * 60 + "%",
+      size: 1.5 + Math.random() * 2.5,
+      dur: 2 + Math.random() * 4,
+      delay: -Math.random() * 6,
+    }));
+  }, [key, isNight]);
+
+  const showSun = !isNight && (key === "clear" || key === "partly");
+  const showMoon = isNight && (key === "clear" || key === "partly");
+  const lowSun = tod === "dawn" || tod === "dusk";
 
   return (
-    <div className={`sky sky--${key}`}>
-      {showSun && <div className={key === "partly" ? "sun sun--peek" : "sun"} />}
+    <div className={`sky sky--${key} sky--${tod}`}>
+      {stars.map((s, i) => (
+        <div key={"s" + i} className="star" style={{
+          left: s.left, top: s.top, width: s.size, height: s.size,
+          animationDuration: s.dur + "s", animationDelay: s.delay + "s",
+        }} />
+      ))}
+      {showSun && <div className={"sun" + (key === "partly" ? " sun--peek" : "") + (lowSun ? " sun--low" : "")} />}
+      {showMoon && <div className={key === "partly" ? "moon moon--peek" : "moon"} />}
       {(key !== "clear") && clouds.map((c, i) => (
         <div key={"c" + i} className="cloud" style={{
           top: c.top, width: c.w, height: c.h,
@@ -168,7 +221,7 @@ function WeatherStrip({ weather, leaveHour }) {
   return (
     <div className="wstrip">
       {weather.hourly.map((h, i) => {
-        const info = wmoInfo(h.code);
+        const info = wmoInfo(h.code, h.isDay);
         const isLeave = leaveHour != null && h.hour === leaveHour;
         return (
           <div key={i} className={"whour" + (i === 0 ? " whour--now" : "") + (isLeave ? " whour--leave" : "")}>
@@ -183,4 +236,4 @@ function WeatherStrip({ weather, leaveHour }) {
   );
 }
 
-Object.assign(window, { wmoInfo, useWeather, WeatherScene, WeatherStrip });
+Object.assign(window, { wmoInfo, useWeather, timeOfDay, WeatherScene, WeatherStrip });

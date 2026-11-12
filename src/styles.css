@@ -129,6 +129,22 @@ input { font-family: inherit; }
 .sky--storm   { background: linear-gradient(180deg, #3c4456 0%, #545d72 55%, #828ca0 100%); }
 .sky--fog     { background: linear-gradient(180deg, #a7b0b8 0%, #c3c9cf 55%, #dfe3e6 100%); }
 
+.sky--night.sky--clear  { background: linear-gradient(180deg, #0b1433 0%, #1c2a5a 55%, #3a4a7a 100%); }
+.sky--night.sky--partly { background: linear-gradient(180deg, #101a3a 0%, #24315e 55%, #45537e 100%); }
+.sky--night.sky--cloudy { background: linear-gradient(180deg, #1f2633 0%, #343d4d 55%, #4f5869 100%); }
+.sky--night.sky--rain   { background: linear-gradient(180deg, #161c27 0%, #2a3242 55%, #434c5d 100%); }
+.sky--night.sky--snow   { background: linear-gradient(180deg, #232c42 0%, #3d4862 55%, #66718b 100%); }
+.sky--night.sky--storm  { background: linear-gradient(180deg, #0e1119 0%, #1e2330 55%, #353b4b 100%); }
+.sky--night.sky--fog    { background: linear-gradient(180deg, #2b3038 0%, #434951 55%, #5f656c 100%); }
+
+.sky--dawn.sky--clear,  .sky--dusk.sky--clear  { background: linear-gradient(180deg, #3a4f8f 0%, #a07fb5 45%, #f6b38a 80%, #ffd9a0 100%); }
+.sky--dawn.sky--partly, .sky--dusk.sky--partly { background: linear-gradient(180deg, #4a5c94 0%, #a58bb8 45%, #f2bc96 80%, #ffe0b5 100%); }
+.sky--dawn.sky--cloudy, .sky--dusk.sky--cloudy { background: linear-gradient(180deg, #4d5873 0%, #8a8aa0 50%, #c9a9a3 85%, #e6cfc0 100%); }
+.sky--dawn.sky--rain,   .sky--dusk.sky--rain   { background: linear-gradient(180deg, #3a4255 0%, #5f6577 50%, #8f8a92 85%, #b3a8a8 100%); }
+.sky--dawn.sky--snow,   .sky--dusk.sky--snow   { background: linear-gradient(180deg, #56628a 0%, #9a9cb8 50%, #d9c3c8 85%, #f2e4e2 100%); }
+.sky--dawn.sky--storm,  .sky--dusk.sky--storm  { background: linear-gradient(180deg, #262b3b 0%, #40465a 50%, #6a6474 85%, #8f8288 100%); }
+.sky--dawn.sky--fog,    .sky--dusk.sky--fog    { background: linear-gradient(180deg, #6e7286 0%, #a19fae 50%, #d4c4c0 85%, #ebe0d9 100%); }
+
 /* SUN */
 .sun {
   position: absolute;
@@ -161,7 +177,35 @@ input { font-family: inherit; }
   animation: spin 60s linear infinite;
 }
 .sun--peek { top: 7%; right: 16%; width: 96px; height: 96px; opacity: .92; }
+.sun--low {
+  top: 26%;
+  background: radial-gradient(circle at 50% 50%, #fff1c9 0%, #ffb866 55%, #ff9a4a 100%);
+  box-shadow: 0 0 80px 34px rgba(255,160,90,.55);
+}
+.sun--low::before { opacity: .5; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* MOON + STARS */
+.moon {
+  position: absolute;
+  top: 9%; right: 14%;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  box-shadow: 28px 12px 0 0 #fbf3cf;
+  filter: drop-shadow(0 0 24px rgba(251,243,207,.55));
+}
+.moon--peek { top: 7%; right: 18%; width: 84px; height: 84px; box-shadow: 22px 9px 0 0 #fbf3cf; opacity: .9; }
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fffbe6;
+  box-shadow: 0 0 6px 1px rgba(255,251,230,.7);
+  animation: twinkle ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: .9; }
+  50%      { opacity: .25; }
+}
 
 /* CLOUDS */
 .cloud {
@@ -179,6 +223,11 @@ input { font-family: inherit; }
 .cloud::after  { width: 50%; height: 135%; right: 10%; top: -42%; }
 .sky--cloudy .cloud, .sky--rain .cloud, .sky--storm .cloud, .sky--snow .cloud { background: #f3f6fa; opacity: .9; }
 .sky--storm .cloud { background: #dde2ea; }
+.sky--night .cloud { background: #5a6685; opacity: .55; }
+.sky--night.sky--cloudy .cloud, .sky--night.sky--rain .cloud, .sky--night.sky--snow .cloud { background: #4a5468; opacity: .8; }
+.sky--night.sky--storm .cloud { background: #3a4152; opacity: .85; }
+.sky--dawn .cloud, .sky--dusk .cloud { background: #ffe6da; }
+.sky--night .fogbank { opacity: .35; }
 @keyframes drift {
   from { transform: translateX(-30vw); }
   to   { transform: translateX(120vw); }
@@ -236,5 +285,5 @@ input { font-family: inherit; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sun::before, .cloud, .drop, .flake, .flash, .fogbank { animation: none !important; }
+  .sun::before, .cloud, .drop, .flake, .flash, .fogbank, .star { animation: none !important; }
 }

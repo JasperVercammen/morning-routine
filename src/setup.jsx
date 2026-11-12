@@ -219,7 +219,7 @@ function SetupScreen({ config, setConfig, onStart, weather }) {
   const activeKids = config.kids.filter((k) => k.on && k.name.trim());
   const canStart = activeKids.length > 0 && config.tasks.length > 0;
 
-  const info = weather && weather.current ? wmoInfo(weather.current.code) : null;
+  const info = weather && weather.current ? wmoInfo(weather.current.code, weather.current.isDay) : null;
 
   return (
     <div className="setup">
